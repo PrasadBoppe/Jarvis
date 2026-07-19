@@ -3,12 +3,14 @@ from core.session import ChatSession
 import time
 from voice.text_to_speech import TextToSpeech
 from voice.speech_to_text import SpeechToText
+from tools.manager import ToolManager
 
 def main():
     llm = LLM()
     session = ChatSession()
     tts = TextToSpeech()
     stt = SpeechToText()
+    tool_manager = ToolManager()
 
     print("=" * 40)
     print("🤖 Jarvis")
@@ -41,19 +43,24 @@ def main():
         if command == "exit":
             break
 
-        session.add_user_message(user_input)
-
         start = time.perf_counter()
 
-        reply = llm.ask(session.messages)
+        # Try to route to a tool
+        tool_result = tool_manager.route(user_input)
 
-        session.add_assistant_message(reply)
+        if tool_result and tool_result.success:
+            # Tool executed successfully, return its content directly
+            reply = tool_result.content
+        else:
+            # No tool matched, use LLM
+            session.add_user_message(user_input)
+            reply = llm.ask(session.messages)
+            session.add_assistant_message(reply)
 
         elapsed = time.perf_counter() - start
 
         print(f"\nJarvis: {reply}")
         tts.speak(reply)
-        
         print(f"\n⏱️ {elapsed:.2f} seconds")
 
 

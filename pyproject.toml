@@ -5,8 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "ddgs>=9.14.4",
+    "fastapi>=0.139.2",
     "mlx-whisper>=0.4.3",
     "ollama>=0.6.2",
     "scipy>=1.15.3",
     "sounddevice>=0.5.5",
+    "uvicorn>=0.51.0",
 ]

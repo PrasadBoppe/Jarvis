@@ -2,7 +2,7 @@ import numpy as np
 import sounddevice as sd
 from scipy.io.wavfile import write
 from mlx_whisper import transcribe
-from config import SAMPLE_RATE, CHUNK_DURATION, SILENCE_THRESHOLD, SILENCE_DURATION
+from config import SAMPLE_RATE, CHUNK_DURATION, SILENCE_THRESHOLD, SILENCE_DURATION, MIN_SPEECH_DURATION
 
 class SpeechToText:
     DURATION = 5  # seconds
@@ -21,10 +21,12 @@ class SpeechToText:
 
         chunk_size = int(SAMPLE_RATE * CHUNK_DURATION)
         silence_chunks = int(SILENCE_DURATION / CHUNK_DURATION)
+        min_speech_chunks = int(MIN_SPEECH_DURATION / CHUNK_DURATION)
 
         state = WAITING
         chunks = []
         silent_count = 0
+        speech_chunks_count = 0
 
         with sd.InputStream(
             samplerate=SAMPLE_RATE,
@@ -40,17 +42,25 @@ class SpeechToText:
                         print("🗣️ Speech detected")
                         state = RECORDING
                         chunks.append(chunk)
+                        speech_chunks_count += 1
                 else:  # RECORDING
                     chunks.append(chunk)
+                    speech_chunks_count += 1
                     
                     if self._is_silent(chunk):
                         silent_count += 1
                     else:
                         silent_count = 0
 
-                    if silent_count >= silence_chunks:
+                    # Only stop if we have enough speech duration AND silence is detected
+                    if silent_count >= silence_chunks and speech_chunks_count >= min_speech_chunks:
                         print("🤫 Silence detected")
                         break
+
+        # Check if we captured enough speech
+        if speech_chunks_count < min_speech_chunks:
+            print("⚠️ Speech too short, discarding recording.")
+            return
 
         audio = np.concatenate(chunks, axis=0)
 
