@@ -1,16 +1,24 @@
 from ollama import chat
-
+from config import MODEL
 
 class LLM:
-    def ask(self, message: str) -> str:
-        response = chat(
-            model="qwen3:4b",
-            messages=[
-                {
-                    "role": "user",
-                    "content": message,
-                }
-            ],
+    def ask(self, messages: list):
+        stream = chat(
+            model=MODEL,
+            messages=messages,
+            stream=True,
+            think=False,
         )
 
-        return response.message.content
+        full_response = ""
+
+        #print("\nJarvis: ", end="", flush=True)
+
+        for chunk in stream:
+            text = chunk.message.content
+            #print(text, end="", flush=True)
+            full_response += text
+
+        #print()
+
+        return full_response
